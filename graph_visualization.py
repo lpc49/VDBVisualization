@@ -22,6 +22,20 @@ import logging
 # =========================
 # Constants
 # =========================
+
+# TODO: replace hardcoded seed and max_elements with a json config file used by both build_index_subset.py and graph_visualization.py
+
+# memory allocation for the index when building load_data()
+# must match the value used in build_index_subset.py
+MAX_ELEMENTS = 50000
+
+# fixing seed for reproducibility
+# must match the value used in build_index_subset.py
+SEED=420
+random.seed(SEED)
+np.random.seed(SEED)
+
+# edge transparency
 EDGE_ALPHA_MIN = 0.01
 EDGE_ALPHA_SCALE = 0.1
 EDGE_WIDTH_MIN = 0.25
@@ -114,7 +128,7 @@ def compute_intrinsic_layout(nodes, edges):
     return eigvecs[:, 1:3] if k >= 3 else eigvecs[:, 0:2]
 
 
-def landmark_mds(G, n_landmarks=200):
+def landmark_mds(G, n_landmarks=200, random_state=42):
     """Compute a scalable approximation of MDS using landmark nodes."""
     nodes_g = list(G.nodes)
     n_g = len(nodes_g)
@@ -134,7 +148,7 @@ def landmark_mds(G, n_landmarks=200):
         n_components=2,
         metric='precomputed',
         normalized_stress='auto',
-        random_state=42,
+        random_state=random_state,
         n_init=1,
         init='classical_mds'
     )
@@ -152,7 +166,7 @@ def landmark_mds(G, n_landmarks=200):
     return pos_all
 
 
-def compute_mds_layout(nodes, edges, landmark_cutoff=200, n_landmarks=200):
+def compute_mds_layout(nodes, edges, landmark_cutoff=200, n_landmarks=200, random_state=42):
     """MDS layout based on shortest path distances."""
     n = len(nodes)
     if n <= 2:
@@ -170,15 +184,15 @@ def compute_mds_layout(nodes, edges, landmark_cutoff=200, n_landmarks=200):
             n_components=2,
             metric='precomputed',
             normalized_stress='auto',
-            random_state=42,
+            random_state=random_state,
             n_init=1,
             init='classical_mds'
         ).fit_transform(D)
     else:
-        return landmark_mds(G, n_landmarks=n_landmarks)
+        return landmark_mds(G, n_landmarks=n_landmarks, random_state=random_state)
 
 
-def compute_umap_layout(nodes, data):
+def compute_umap_layout(nodes, data, random_state=42):
     """UMAP embedding of node vectors."""
     n = len(nodes)
     if n <= 2:
@@ -192,7 +206,7 @@ def compute_umap_layout(nodes, data):
         n_neighbors=n_neighbors,
         min_dist=0.1,
         metric='cosine',
-        random_state=42,
+        random_state=random_state,
         n_jobs=1
     )
     return reducer.fit_transform(data[nodes]), n_neighbors
@@ -435,15 +449,16 @@ def plot_graph(
     density_global=None,
     title_suffix="",
     highlight_node=None,
-    distance_map=None
+    distance_map=None,
+    random_state=42
 ):
     """Main visualization function."""
     edge_alpha_boost = compute_edge_alpha_scale(len(edges))
     node_idx = {node: i for i, node in enumerate(nodes)}
 
     pos_intrinsic = compute_intrinsic_layout(nodes, edges)
-    pos_mds = compute_mds_layout(nodes, edges)
-    pos_umap, n_neighbors = compute_umap_layout(nodes, data)
+    pos_mds = compute_mds_layout(nodes, edges, random_state)
+    pos_umap, n_neighbors = compute_umap_layout(nodes, data, random_state)
 
     plots = [(pos_intrinsic, "Intrinsic (Laplacian)")]
     if pos_mds is not None:
@@ -589,11 +604,6 @@ def main():
     parser.add_argument('--n_nodes', type=int, default=50000)
     args = parser.parse_args()
 
-    # fixing seed for reproducibility
-    SEED = 42
-    random.seed(SEED)
-    np.random.seed(SEED)
-
     log("LOAD", "Loading data...")
     idx, data = load_data(
         'data/glove25_50k.bin',
@@ -609,8 +619,13 @@ def main():
         print(f"[LAYERS] layer {l}: {len(layer_nodes[l])} nodes, {len(layer_edges[l])} edges")
 
     if args.layer is None:
-        args.layer = max(layer_nodes.keys())
-        log("ARGS", f"No layer provided: using max layer {args.layer}")
+        sorted_layers = sorted(layer_nodes.keys(), reverse=True)
+        args.layer = sorted_layers[0]
+        if len(layer_nodes[args.layer]) == 1 and len(sorted_layers) > 1:
+            args.layer = sorted_layers[1]
+            log("ARGS", f"No layer provided: top layer has only 1 node, using second-to-top layer {args.layer}")
+        else:
+            log("ARGS", f"No layer provided: using max layer {args.layer}")
 
     if args.layer not in layer_nodes:
         log("WARN", f"Layer {args.layer} does not exist")
@@ -696,7 +711,8 @@ def main():
         node_importance_local=local_importance,
         density_global=density_global,
         highlight_node=args.node_id,
-        distance_map=distance_map
+        distance_map=distance_map,
+        random_state=SEED
     )
 
 if __name__ == '__main__':

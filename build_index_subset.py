@@ -1,13 +1,21 @@
 import hnswlib, numpy as np, h5py, time
 
-max_elements = 50000 #subset size
+# TODO: replace hardcoded seed and max_elements with a json config file used by both build_index_subset.py and graph_visualization.py
+
+# memory allocation for the index when building idx.init_index()
+# must match the value used in graph_visualization.py
+MAX_ELEMENTS = 50000
+
+# fixing seed for reproducibility
+# must match the value used in graph_visualization.py
+SEED=420
 
 with h5py.File('data/glove-25-angular.hdf5', 'r') as f:
-    data = f['train'][:max_elements].astype(np.float32)
+    data = f['train'][:MAX_ELEMENTS].astype(np.float32)
 
 # inner product space for unit-normalized vectors
 idx = hnswlib.Index(space='ip', dim=25)
-idx.init_index(max_elements=max_elements, ef_construction=200, M=16)
+idx.init_index(max_elements=MAX_ELEMENTS, ef_construction=200, M=16, random_seed=SEED)
 
 t = time.time()
 idx.add_items(data, np.arange(len(data)))
