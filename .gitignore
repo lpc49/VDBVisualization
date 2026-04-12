@@ -207,9 +207,9 @@ marimo/_lsp/
 __marimo__/
 
 
-# datasets
+# Article and data folders
+/article
 /data
 
 # Roadmap
 Roadmap.md
-vdb_article.md
