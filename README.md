@@ -11,8 +11,8 @@ This tool renders the internal graph structure of an HNSW index across its layer
 **Current limitations and planned work:**
 - Only normalized angular (cosine) datasets are supported. Euclidean distance support is planned for a future commit.
 - The codebase is currently a single file. Splitting into modules with unit tests is planned.
-- The tool is designed for pedagogy around HNSW specifically. A future version will support comparison with other ANN algorithms (e.g., IVF-PQ, NSG).
-- Not optimized for large-scale datasets. Python was chosen deliberately to leverage standard scientific packages. The MVP targets GloVe-25 (dimension 25, 50k vectors).
+- The tool is designed for pedagogy around HNSW specifically. We are also interested in comparing it with other ANN algorithms (e.g., IVF-PQ, NSG) in the future.
+- Not currently optimized for large-scale datasets. Python was chosen deliberately to leverage standard scientific packages. The current target is GloVe-25 (dimension 25, 50k vectors).
 
 ---
 
@@ -33,6 +33,7 @@ hnswlib is vendored locally with a custom binding (`get_links`) that exposes per
 ```bash
 cd hnswlib
 pip install .
+cd ..
 ```
 
 ### 3. Fetch data
@@ -122,25 +123,26 @@ Computed as `1 / mean_distance_to_knn`, where distances are inner-product distan
 
 ## Results
 
-### Full layer 1
-
-*(Insert screenshot here)*
+### Layer graph
 
 - **Intrinsic layout:** Nodes cluster in the center, with entry-point nodes forming clear spurs at the periphery. This reflects the HNSW design: upper-layer entry points have long-range connections that place them structurally distant from the densely connected base cluster.
 - **MDS layout:** Star-shaped structure, with the highest-importance nodes clustering near the center. This is consistent with HNSW's greedy routing — central hubs are visited by nearly every search path regardless of query direction.
 - **UMAP layout:** Reveals the underlying embedding geometry — arms of densely packed vectors corresponding to semantic clusters in the GloVe space.
 
+![Layer 1](assets/full_graph_layer1.png)
+
 ### Neighborhood around a node (graph distance)
 
-*(Insert screenshot here)*
+Zooming into a node's graph neighborhood broadly preserves the structural patterns observed at the full-graph level. This self-similarity consistent with HNSW's hierarchical small-world construction.
 
-Zooming into a node's graph neighborhood preserves the structural patterns seen at the full-graph level — a self-similarity consistent with HNSW's hierarchical small-world construction.
+![Graph Neighborhood Node 3940](assets/neighborhood_graph_node3940.png)
+![Graph Neighborhood Node 5807](assets/neighborhood_graph_node5807.png)
 
 ### Neighborhood around a node (UMAP/embedding distance)
 
-*(Insert screenshot here)*
-
 Some high-importance nodes that are close in embedding space are not directly connected by an edge — they require a path of 2 or more hops. This reveals a key HNSW property: the graph is not a nearest-neighbor graph. Connectivity is determined during index construction by the order of insertion and the `M` parameter, not purely by embedding proximity. Nodes that appear close in UMAP may only be reachable via intermediaries, reflecting the approximate (rather than exact) nature of HNSW search.
+
+![Umap Neighborhood Node 3940](assets/neighborhood_umap_node3940.png)
 
 ---
 
@@ -157,10 +159,10 @@ Some high-importance nodes that are close in embedding space are not directly co
 Other ANN benchmark datasets (e.g., SIFT-128) are available at:  
 [https://github.com/erikbern/ann-benchmarks/](https://github.com/erikbern/ann-benchmarks/?tab=readme-ov-file)
 
-> ⚠️ Only normalized angular datasets are currently supported.
+> Warning: only normalized angular datasets are currently supported.
 
 ---
 
 ## Read more
 
-See the accompanying [LaTeX article](link to ArXiV) for a detailed treatment of HNSW, the visualization methodology, and interpretation of results.
+See the accompanying [LaTeX article](link to ArXiV) for a detailed treatment of HNSW, the visualization methodology, and interpretation of results (in progress).
