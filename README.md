@@ -98,7 +98,7 @@ Clicked node: 4821 | importance=0.7312 | density=0.5140 | graph distance=3
 
 | Layout | Method | Interpretation |
 |---|---|---|
-| **Intrinsic (Laplacian)** | Spectral embedding via normalized graph Laplacian eigenvectors | Reveals intrinsic graph topology — entry points appear as outliers |
+| **Intrinsic (Laplacian)** | Spectral embedding via normalized graph Laplacian eigenvectors | Reveals intrinsic graph topology — entry points typically appear as outliers |
 | **MDS (shortest path)** | Classical MDS on pairwise BFS distances | Reflects navigation distances; high-importance nodes cluster centrally |
 | **UMAP** | Nonlinear dimensionality reduction on raw embedding vectors | Most faithful to the original vector space geometry |
 
@@ -125,7 +125,7 @@ Computed as `1 / mean_distance_to_knn`, where distances are inner-product distan
 
 ### Layer graph
 
-- **Intrinsic layout:** Nodes cluster in the center, with entry-point nodes forming clear spurs at the periphery. This reflects the HNSW design: upper-layer entry points have long-range connections that place them structurally distant from the densely connected base cluster.
+- **Intrinsic layout:** Nodes cluster in the center, with entry-point nodes typically forming clear spurs at the periphery. This reflects the HNSW design: upper-layer entry points have long-range connections that place them structurally distant from the densely connected base cluster.
 - **MDS layout:** Star-shaped structure, with the highest-importance nodes clustering near the center. This is consistent with HNSW's greedy routing — central hubs are visited by nearly every search path regardless of query direction.
 - **UMAP layout:** Reveals the underlying embedding geometry — arms of densely packed vectors corresponding to semantic clusters in the GloVe space.
 
